@@ -22,7 +22,7 @@ class AIClientHuggingFace(AIClient):
             "deepseek": "deepseek-ai/DeepSeek-R1",
             "qwen": "Qwen/Qwen2.5-72B-Instruct",
             "gemma": "google/gemma-2-9b-it",
-            "gpt": "openai/gpt-4",
+            "gpt": "openai/gpt-oss-20b",
         }
 
         for key, value in model_mapping.items():
