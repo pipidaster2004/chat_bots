@@ -1,4 +1,6 @@
+import html
 import json
+import re
 import urllib.request
 import os
 from dotenv import load_dotenv
@@ -16,10 +18,17 @@ class AIClientHuggingFace(AIClient):
         }
         api_url = os.getenv("HUGGINGFACE_API_URL")
 
-        payload = {
-            "inputs": message,
-            "parameters": {"max_new_tokens": 500, "temperature": 0.7},
+        model_mapping = {
+            "deepseek": "deepseek-ai/DeepSeek-R1",
+            "qwen": "Qwen/Qwen2.5-72B-Instruct",
+            "gemma": "google/gemma-2-9b-it",
+            "gpt": "openai/gpt-4",
         }
+
+        for key, value in model_mapping.items():
+            if key in model.lower():
+                model = value
+        payload = {"messages": [{"role": "user", "content": message}], "model": model}
 
         try:
             data = json.dumps(payload).encode("utf-8")
@@ -31,15 +40,21 @@ class AIClientHuggingFace(AIClient):
                 if response.status == 200:
                     response_data = json.loads(response.read().decode("utf-8"))
 
-                    if isinstance(response_data, list) and len(response_data) > 0:
-                        return response_data[0].get("generated_text", "No response")
-                    elif "generated_text" in response_data:
-                        return response_data["generated_text"]
+                    if response_data and len(response_data) > 0:
+                        raw_text = html.unescape(
+                            response_data["choices"][0]["message"]["content"]
+                        )
+                        ai_response = re.sub(
+                            r"<think>.*?</think>", "", raw_text, flags=re.DOTALL
+                        )
+                        ai_response = re.sub(r"\n\s*\n", "\n\n", ai_response).strip()
                     else:
-                        return str(response_data)
+                        ai_response = str(response_data)
+
+                    return ai_response
                 else:
                     error_text = response.read().decode("utf-8")
-                    return f"API Error {response.status}: {error_text[:500]}"
+                    return f"Ошибка API (код {response.status}): {error_text[:500]}"
 
         except Exception as e:
             return f"Error: {str(e)}"
