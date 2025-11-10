@@ -28,17 +28,14 @@ class HistoryHandler(Handler):
         storage.add_message(telegram_id, message)
         messages = storage.get_last_messages(telegram_id)
 
-        # Форматируем сообщения
         if not messages:
             history_text = "История сообщений пуста."
         else:
             message_list = []
             for i, msg in enumerate(messages):
-                # msg[0] - текст сообщения, msg[1] - дата/время
                 message_text = msg[0] or "No text"
                 message_date = msg[1]
 
-                # Форматируем дату
                 if hasattr(message_date, "strftime"):
                     formatted_date = message_date.strftime("%d-%m-%Y %H:%M")
                 else:

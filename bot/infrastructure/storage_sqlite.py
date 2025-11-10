@@ -9,6 +9,7 @@ load_dotenv()
 
 
 class StorageSqlite(Storage):
+    @staticmethod
     def recreate_database() -> None:
         with sqlite3.connect(os.getenv("SQLITE_DATABASE_PATH")) as connection:
             with connection:
