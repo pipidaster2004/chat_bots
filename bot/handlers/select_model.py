@@ -1,4 +1,3 @@
-import json
 from bot.domain.messenger import Messenger
 from bot.domain.storage import Storage
 from bot.handlers.handler import Handler, HandlerStatus
@@ -12,11 +11,12 @@ class SelectModel(Handler):
         storage: Storage,
         messenger: Messenger,
     ):
-        return (
-            "message" in update
-            and "text" in update["message"]
-            and update["message"]["text"] == "/select"
-        )
+        if not ("message" in update and "text" in update["message"]):
+            return False
+
+        user_message = update["message"]["text"]
+        valid_choices = ["DeepSeek", "Qwen", "GPT", "Gemma"]
+        return user_message in valid_choices
 
     def handle(
         self,
@@ -26,29 +26,23 @@ class SelectModel(Handler):
         messenger: Messenger,
     ):
         telegram_id = update["message"]["from"]["id"]
-        storage.add_message(telegram_id, message)
+        chat_id = update["message"]["chat"]["id"]
+        user_choice = update["message"]["text"]
+
+        model_mapping = {
+            "DeepSeek": "deepseekDeepSeek-R1:novita",
+            "Qwen": "Qwen/Qwen3-8B",
+            "GPT": "openai/gpt-oss-20b",
+            "Gemma": "google/gemma-3-1b-it",
+        }
+
+        selected_model = model_mapping[user_choice]
+        storage.set_user_state(telegram_id, {"selected_model": selected_model})
+        storage.add_message(telegram_id, f"Selected model: {user_choice}")
+
         messenger.sendMessage(
-            chat_id=update["message"]["chat"]["id"],
-            text="Please choose  model",
-            reply_markup=json.dumps(
-                {
-                    "inline_keyboard": [
-                        [
-                            {
-                                "text": "DeepSeek",
-                                "callback_data": "deepseekDeepSeek-R1:novita",
-                            },
-                            {"text": "Qwen", "callback_data": "Qwen/Qwen3-8B"},
-                        ],
-                        [
-                            {"text": "GPT", "callback_data": "openai/gpt-oss-20b"},
-                            {
-                                "text": "Google Gemma",
-                                "callback_data": "google/gemma-3-1b-it",
-                            },
-                        ],
-                    ]
-                }
-            ),
+            chat_id=chat_id,
+            text=f"Select model using inline buttons: {selected_model}\nPlease enter your request:",
         )
+
         return HandlerStatus.STOP

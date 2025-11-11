@@ -52,9 +52,10 @@ class AIRequestHandler(Handler):
                 chat_id=update["message"]["chat"]["id"],
                 message_id=processing_msg["message_id"],
             )
-
             messenger.sendMessage(
-                chat_id=update["message"]["chat"]["id"], text=ai_response
+                chat_id=update["message"]["chat"]["id"],
+                text=ai_response,
+                parse_mode="Markdown",
             )
 
         except Exception as e:
