@@ -2,6 +2,7 @@ from bot.domain.messenger import Messenger
 from bot.domain.storage import Storage
 from bot.domain.ai_client import AIClient
 from bot.handlers.handler import Handler, HandlerStatus
+import re
 
 
 class AIRequestHandler(Handler):
@@ -47,15 +48,15 @@ class AIRequestHandler(Handler):
 
         try:
             ai_response = self.ai_client.make_request(selected_model, user_message)
-
+            print(ai_response)
             messenger.deleteMessage(
                 chat_id=update["message"]["chat"]["id"],
                 message_id=processing_msg["message_id"],
             )
+            clean_response = self.smart_format(ai_response)
             messenger.sendMessage(
                 chat_id=update["message"]["chat"]["id"],
-                text=ai_response,
-                parse_mode="Markdown",
+                text=clean_response,
             )
 
         except Exception as e:
@@ -71,3 +72,54 @@ class AIRequestHandler(Handler):
             print(f"AI request error: {e}")
 
         return HandlerStatus.STOP
+
+    def smart_format(self, text: str) -> str:
+        """
+        Продвинутое форматирование математических выражений
+        """
+        text = re.sub(r"\\frac\{([^}]+)\}\{([^}]+)\}", r"\1 ÷ \2", text)
+        text = re.sub(r"\\sqrt\{([^}]+)\}", r"√(\1)", text)
+        text = re.sub(r"\^\{([^}]+)\}", r"^\1", text)
+        text = re.sub(r"\_\{([^}]+)\}", r"_\1", text)
+        text = text.replace("### ", "")
+        text = text.replace("1. ", "1. ")
+        text = text.replace("2. ", "2. ")
+        text = text.replace("3. ", "3. ")
+        latex_replacements = {
+            "\\cdot": "×",
+            "\\times": "×",
+            "\\div": "÷",
+            "\\implies": "→",
+            "\\Rightarrow": "→",
+            "\\Leftrightarrow": "↔",
+            "\\pm": "±",
+            "\\mp": "∓",
+            "\\approx": "≈",
+            "\\neq": "≠",
+            "\\leq": "≤",
+            "\\geq": "≥",
+            "\\infty": "∞",
+            "\\pi": "π",
+            "\\alpha": "α",
+            "\\beta": "β",
+            "\\gamma": "γ",
+            "\\delta": "δ",
+            "\\epsilon": "ε",
+            "\\theta": "θ",
+            "\\lambda": "λ",
+            "\\mu": "μ",
+            "\\sigma": "σ",
+            "\\phi": "φ",
+            "\\omega": "ω",
+            "\\boxed": "",
+        }
+
+        for latex_cmd, replacement in latex_replacements.items():
+            text = text.replace(latex_cmd, replacement)
+        text = text.replace("{", "").replace("}", "")
+        text = re.sub(r"\\\[(.*?)\\\]", r"\1", text, flags=re.DOTALL)
+        text = re.sub(r"\\\((.*?)\\\)", r"\1", text)
+        text = text.replace("\\", "")
+        text = text.replace("**", "")
+
+        return text
