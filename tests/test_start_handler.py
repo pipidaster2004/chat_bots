@@ -35,5 +35,5 @@ class TestMessageStart(unittest.TestCase):
             update, "/start", self.mock_storage, self.mock_messenger
         )
         self.assertEqual(result, HandlerStatus.STOP)
-        self.assertEqual(self.mock_messenger.sendMessage.call_count, 2)
+        self.assertEqual(self.mock_messenger.sendMessage.call_count, 1)
         self.mock_storage.add_message.assert_called_once_with(123, "/start")
